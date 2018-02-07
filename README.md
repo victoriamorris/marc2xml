@@ -46,4 +46,8 @@ This utility converts a file of MARC .lex records to MARC XML.
 ### Notes
  
 MARC input files must have .lex file extensions.
-If -x is specified, the XSLT processor saxon.jar must be present\nin the same folder as the XSLT.
+
+If -x is specified, the XSLT processor saxon.jar must be present in the same folder as the XSLT.
+
+If XSLT is used, the output document will be a concatenation of the result of transforming individual MARC records.
+There will be no root/wrapper element. The output document must therefore be edited before it can be used as valid XML.
