@@ -385,7 +385,7 @@ def usage():
     print('    -x <xfile>  Apply XSLT during transformation.')
     print('    --debug     Debug mode.')
     print('    --help      Display this help message and exit.')
-    print('\nIf -x is specified, the XSLT processor saxon.jar must be present\nin the same folder as the XSLT.')
+    print('\nIf -x is specified, the XSLT processor saxon.jar must be present\nin the same folder as the XSLT\nand Java must be installed.')
     print('Use quotation marks (") around arguments which contain spaces.')
     exit_prompt()
 
@@ -459,44 +459,69 @@ def main(argv=None):
 
     # Construct command line instruction to be used for XSLT
     if transform:
-        xslt_command = 'java -jar saxon.jar -s:"__temp.xml" -xsl:"{}" 1>>"{}" 2>>error.log'.format(xfile.path, ofile.path)
+        xslt_command = 'java -jar saxon.jar -s:"__temp.xml" -xsl:"{}" -o:"__temp_conv.xml" 2>>error.log'.format(xfile.path)
 
     # Open input file
     ifile = open(ifile.path, 'rb')
 
-    # Write start of MARC XML if XSLT is not to be used
-    if not transform:
+    # Write start of MARC XML
+    if transform:
+        tfile = open('__temp.xml', 'w', encoding='utf-8', errors='replace')
+        tfile.write(XML_START)
+        ofile = open(ofile.path, 'w', encoding='utf-8', errors='replace')
+    else:
         ofile = open(ofile.path, 'w', encoding='utf-8', errors='replace')
         ofile.write(XML_START)
 
     # Iterate over MARC records
     reader = MARCReader(ifile)
-    i = 0
+    i, j = 0, 0
     for record in reader:
         i += 1
+        j += 1
         print('{} records converted'.format(str(i)), end='\r')
         # Convert record to MARC XML
         x = record.as_xml()
 
         if transform:
-            # If XSLT is to be used, save record to temporary file, then transform temporary file
-            tfile = open('__temp.xml', 'w', encoding='utf-8', errors='replace')
-            tfile.write(XML_START + x + XML_END)
-            tfile.close()
-            subprocess.call(xslt_command, shell=True)
+            tfile.write(x)
+            # Apply XSLT at every 1000th record
+            if i % 1000 == 0:
+                j = 0
+                tfile.write(XML_END)
+                tfile.close()
+                subprocess.call(xslt_command, shell=True)
+                with open('__temp_conv.xml', 'r', encoding='utf-8', errors='replace') as f:
+                    for line in f:
+                        if '<?xml version="1.0" encoding="UTF-8"?>' not in line or i == 1000:
+                            ofile.write(line)
+                tfile = open('__temp.xml', 'w', encoding='utf-8', errors='replace')
+                tfile.write(XML_START)
         else:
             # If XSLT is not to be used, write MARC XML directly to output file
             ofile.write(x)
 
-    # Write end of MARC XML if XSLT is not to be used
-    if not transform:
+    # Write end of MARC XML
+    if transform:
+        tfile.write(XML_END)
+        tfile.close()
+        # Apply XSLT to final records
+        if j != 0:
+            subprocess.call(xslt_command, shell=True)
+            with open('__temp_conv.xml', 'r', encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    if '<?xml version="1.0" encoding="UTF-8"?>' not in line or i <= 1000:
+                        ofile.write(line)
+        ofile.close()
+    else:
         ofile.write(XML_END)
         ofile.close()
 
     # Tidy up
     ifile.close()
-    try: os.remove('__temp.xml')
-    except: pass
+    for f in ['__temp.xml', '__temp_conv.xml']:
+        try: os.remove(f)
+        except: pass
 
     print('\n\nTransformation complete')
     print('----------------------------------------')
