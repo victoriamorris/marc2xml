@@ -5,7 +5,8 @@ Tools for converting MARC .lex records to MARC XML
 
 py2exe is required for installation.
 
-If XSLT is to be used, the XSLT processor saxon.jar must be present in the same folder as the XSLT file.
+If XSLT is to be used, the XSLT processor saxon.jar must be present in the same folder as the XSLT file
+and java must be installed on your machine.
 
 ## Installation
 
@@ -47,7 +48,10 @@ This utility converts a file of MARC .lex records to MARC XML.
  
 MARC input files must have .lex file extensions.
 
-If -x is specified, the XSLT processor saxon.jar must be present in the same folder as the XSLT.
+If -x is specified, the XSLT processor saxon.jar must be present in the same folder as the XSLT,
+and java must be installed on your machine.
+saxon.jar is an XSLT 2.0 processor, therefore your XSLT must be compatible with version 2.0.
 
 If XSLT is used, the output document will be a concatenation of the result of transforming individual MARC records.
 There will be no root/wrapper element. The output document must therefore be edited before it can be used as valid XML.
+
